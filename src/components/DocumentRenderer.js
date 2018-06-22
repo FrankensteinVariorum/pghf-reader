@@ -81,7 +81,7 @@ export default class DocumentRenderer extends Component {
                       const beforeText = document.createTextNode(normalizedText.substr(0, localStart))
                       const variantText = document.createTextNode(normalizedText.substr(localStart, localEnd))
                       const afterText = document.createTextNode(normalizedText.substr(localEndStart))
-                      console.log(start, localStart, end, localEnd, normalizedText, variantText, afterText)
+                      // console.log(start, localStart, end, localEnd, normalizedText, variantText, afterText)
                       const lineEl = node.parentNode
                       const spanEl = document.createElement('span')
                       spanEl.classList.add('variant_display_single')
