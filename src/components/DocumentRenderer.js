@@ -14,68 +14,75 @@ class pointerParser {
     this.overlaps = false
     this.elementStack = []
     this.parser = sax.parser(true)
+    this.completed = false
 
     this.parser.ontext = (text) => {
       const curEl = this.elementStack.slice(-1)[0]
       const normalizedText = text.replace(/\s+/g, ' ')
       const newLength = this.textLength + normalizedText.length
       // Xpointer fun here:
-      if (newLength >= this.start && newLength < this.end) {
-        //  1. If count > $start but < $end we have overlap or multiple elements.
-        //     we'll need to replace this text node with a text node until $start + <span>rest of node</span>.
-        //     Set a flag that this has happened as we'll need to find the end
-        this.overlaps = true
-        const localStart = this.start - this.textLength
-        const beforeText = document.createTextNode(normalizedText.substr(0, localStart))
+      if (!this.completed) {
+        if (newLength >= this.start && newLength < this.end) {
+          //  1. If count > $start but < $end we have overlap or multiple elements.
+          //     we'll need to replace this text node with a text node until $start + <span>rest of node</span>.
+          //     Set a flag that this has happened as we'll need to find the end
+          this.overlaps = true
+          const localStart = this.start - this.textLength
+          const beforeText = document.createTextNode(normalizedText.substr(0, localStart))
 
-        curEl.appendChild(beforeText)
+          curEl.appendChild(beforeText)
 
-        const variantString = normalizedText.substr(localStart)
-        if (variantString.length > 0) {
-          const variantText = document.createTextNode(variantString)
-          const spanEl = document.createElement('span')
-          spanEl.appendChild(variantText)
-          spanEl.classList.add('variant_display_single')
-          curEl.appendChild(spanEl)
+          const variantString = normalizedText.substr(localStart)
+          if (variantString.length > 0) {
+            const variantText = document.createTextNode(variantString)
+            const spanEl = document.createElement('span')
+            spanEl.appendChild(variantText)
+            spanEl.classList.add('variant_display_single')
+            curEl.appendChild(spanEl)
+          }
+        } else if (newLength >= this.start && newLength >= this.end && !this.overlaps) {
+          //  2. count > $start and > $end AND NO FLAG, we have a simple span.
+          //     Split text node into textNode* + <span>variant</span> + textNode*
+          const localStart = start - this.textLength
+          const localEnd = end - localStart
+          const localEndStart = end - this.textLength
+          const beforeText = document.createTextNode(normalizedText.substr(0, localStart))
+          const afterText = document.createTextNode(normalizedText.substr(localEndStart))
+
+          curEl.appendChild(beforeText)
+
+          const variantString = normalizedText.substr(localStart, localEnd)
+          if (variantString.length > 0) {
+            const variantText = document.createTextNode(variantString)
+            const spanEl = document.createElement('span')
+            spanEl.classList.add('variant_display_single')
+            spanEl.appendChild(variantText)
+            curEl.appendChild(spanEl)
+          }
+
+          curEl.appendChild(afterText)
+          this.completed = true
+        } else if (newLength >= this.start && newLength >= this.end && this.overlaps) {
+          //  3. If count > $start, > $end, AND FLAG,
+          //     we'll need to replace this text node with <span>until $end</span> + a text node with rest of string.
+          const localEnd = end - this.textLength
+          const variantString = normalizedText.substr(0, localEnd)
+
+          if (variantString.length > 0) {
+            const variantText = document.createTextNode(variantString)
+            const spanEl = document.createElement('span')
+            spanEl.classList.add('variant_display_single')
+            spanEl.appendChild(variantText)
+
+            curEl.appendChild(spanEl)
+          }
+
+          const afterText = document.createTextNode(normalizedText.substr(localEnd))
+          curEl.appendChild(afterText)
+          this.completed = true
+        } else {
+          curEl.appendChild(document.createTextNode(normalizedText))
         }
-      } else if (newLength >= this.start && newLength >= this.end && !this.overlaps) {
-        //  2. count > $start and > $end AND NO FLAG, we have a simple span.
-        //     Split text node into textNode* + <span>variant</span> + textNode*
-        const localStart = start - this.textLength
-        const localEnd = end - localStart
-        const localEndStart = end - this.textLength
-        const beforeText = document.createTextNode(normalizedText.substr(0, localStart))
-        const afterText = document.createTextNode(normalizedText.substr(localEndStart))
-
-        curEl.appendChild(beforeText)
-
-        const variantString = normalizedText.substr(localStart, localEnd)
-        if (variantString.length > 0) {
-          const variantText = document.createTextNode(variantString)
-          const spanEl = document.createElement('span')
-          spanEl.classList.add('variant_display_single')
-          spanEl.appendChild(variantText)
-          curEl.appendChild(spanEl)
-        }
-
-        curEl.appendChild(afterText)
-      } else if (newLength >= this.start && newLength >= this.end && this.overlaps) {
-        //  3. If count > $start, > $end, AND FLAG,
-        //     we'll need to replace this text node with <span>until $end</span> + a text node with rest of string.
-        const localEnd = end - this.textLength
-        const variantString = normalizedText.substr(0, localEnd)
-
-        if (variantString.length > 0) {
-          const variantText = document.createTextNode(variantString)
-          const spanEl = document.createElement('span')
-          spanEl.classList.add('variant_display_single')
-          spanEl.appendChild(variantText)
-
-          curEl.appendChild(spanEl)
-        }
-
-        const afterText = document.createTextNode(normalizedText.substr(localEnd))
-        curEl.appendChild(afterText)
       } else {
         curEl.appendChild(document.createTextNode(normalizedText))
       }
@@ -129,6 +136,7 @@ export default class DocumentRenderer extends Component {
         const colDoc = parser.parseFromString(this.props.collation, 'text/xml')
         // Make links for text variants
         window.col = colDoc
+        // for (const app of Array.from(colDoc.querySelectorAll('app:not([type="invariant"])')).slice(126, 129)) {
         for (const app of colDoc.querySelectorAll('app:not([type="invariant"])')) {
           for (const rdg of app.querySelectorAll(`rdg[wit='#${this.props.source}']`)) {
             const ptrs = rdg.querySelectorAll('ptr')
