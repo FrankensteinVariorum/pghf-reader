@@ -11753,6 +11753,14 @@ function getCollation(url) {
   };
 }
 
+function textNodesUnder(el) {
+  let n;
+  const a = [];
+  const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+  while (n = walk.nextNode()) a.push(n);
+  return a;
+}
+
 function getVariants(app, lemma) {
   return dispatch => {
     const variants = [];
@@ -11761,23 +11769,62 @@ function getVariants(app, lemma) {
       if (reading.tagName === 'rdg') {
         const wit = reading.getAttribute('wit');
         const isLemma = wit === lemma ? true : false;
-        const sourceAndId = reading.children[0].getAttribute('target').split('#');
-        if (wit !== '#fMS') {
-          // Change this when you're ready to work on SGA pointers
-          promises.push((0, _isomorphicFetch2.default)(sourceAndId[0]).then(response => response.text()).then(text => {
-            const source = parser.parseFromString(text, 'text/xml');
-            const variant = source.querySelector(`[*|id="${sourceAndId[1]}"]`);
+        const [sourceUrl, xpointer] = reading.children[0].getAttribute('target').split('#');
+        promises.push((0, _isomorphicFetch2.default)(sourceUrl).then(response => response.text()).then(text => {
+          const source = parser.parseFromString(text, 'text/xml');
+          if (wit !== '#fMS') {
+            const variant = source.querySelector(`[*|id="${xpointer}"]`);
             variants.push({
               group: uuid(),
               values: [{
                 text: variant.textContent,
-                sourceUrl: sourceAndId[0],
+                sourceUrl: sourceUrl,
                 wit,
                 isLemma
               }]
             });
-          }));
-        }
+          } else {
+            const surfaceId = sourceUrl.match(/\/([^\/]+?)\.xml$/)[1];
+            const [zoneAndLine, startVal, endVal] = xpointer.match(/^string-range\((.*)\)$/)[1].split(',');
+            const start = Math.max(parseInt(startVal, 10) - 1, 0);
+            const end = parseInt(endVal, 10) - 1;
+            const zoneType = zoneAndLine.match(/@type='([^']+)'/)[1];
+            const lineNum = parseInt(zoneAndLine.match(/line\[([^\]]+)\]/)[1], 10);
+            const surface = source.querySelector(`surface[*|id='${surfaceId}']`);
+            const zone = surface.querySelector(`zone[type='${zoneType}']`);
+            const line = zone.querySelectorAll('line')[lineNum - 1];
+
+            let textLength = 0;
+            let overlaps = false;
+            let variantText = '';
+            for (const textNode of textNodesUnder(line)) {
+              const normalizedText = textNode.nodeValue.replace(/\s+/g, ' ');
+              const newLength = textLength + normalizedText.length;
+              if (newLength >= start && newLength < end) {
+                overlaps = true;
+                const localStart = start - textLength;
+                variantText += ` ${normalizedText.substr(localStart)} `;
+              } else if (newLength >= start && newLength >= end && !overlaps) {
+                const localStart = start - textLength;
+                const localEnd = end - localStart;
+                variantText += ` ${normalizedText.substr(localStart, localEnd)} `;
+              } else if (newLength >= start && newLength >= end && overlaps) {
+                const localEnd = end - textLength;
+                variantText += ` ${normalizedText.substr(0, localEnd)} `;
+              }
+              textLength = newLength;
+            }
+            variants.push({
+              group: uuid(),
+              values: [{
+                text: variantText,
+                sourceUrl: sourceUrl,
+                wit,
+                isLemma
+              }]
+            });
+          }
+        }));
       } else {
         //   const values = []
         //   for (const rdg of Array.from(reading.getElementsByTagName('rdg'))) {
@@ -43251,7 +43298,6 @@ class DocumentRenderer extends _react.Component {
 
                   // Use a SAX approach to locate pointers in this line and create span elements
                   const saxParser = new pointerParser(start, end, () => {
-                    console.log('clicked');
                     this.props.getVariants(app, rdg.getAttribute('wit'));
                   });
                   const newLine = saxParser.parseLine(line);
