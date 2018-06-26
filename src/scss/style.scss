@@ -1,10 +1,20 @@
 // CETEIcean
-// @import "../../node_modules/CETEIcean/css/CETEIcean.css";
+@import "../../node_modules/CETEIcean/css/CETEIcean.css";
 
-.variant_display_single {
-	display: inline;
-	padding: 1px;
-    background-color: #d9f2e6;
+.variant_display_mult {
+	border: 0px;
+}
+
+.tempMenu {
+	list-style-type: none;
+    margin: 0;
+    padding: 0;
+	overflow: hidden;
+	
+	li {
+		float: left;
+		padding-left: 15px;
+	}
 }
 
 tei-teiHeader {

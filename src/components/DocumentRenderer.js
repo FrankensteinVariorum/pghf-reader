@@ -37,7 +37,7 @@ class pointerParser {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
             spanEl.appendChild(variantText)
-            spanEl.classList.add('variant_display_single')
+            spanEl.classList.add('variant_display_mult')
             curEl.appendChild(spanEl)
           }
         } else if (newLength >= this.start && newLength >= this.end && !this.overlaps) {
@@ -55,7 +55,7 @@ class pointerParser {
           if (variantString.length > 0) {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
-            spanEl.classList.add('variant_display_single')
+            spanEl.classList.add('variant_display_mult')
             spanEl.appendChild(variantText)
             curEl.appendChild(spanEl)
           }
@@ -71,7 +71,7 @@ class pointerParser {
           if (variantString.length > 0) {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
-            spanEl.classList.add('variant_display_single')
+            spanEl.classList.add('variant_display_mult')
             spanEl.appendChild(variantText)
 
             curEl.appendChild(spanEl)
@@ -119,15 +119,7 @@ class pointerParser {
 const parser = new window.DOMParser()
 
 export default class DocumentRenderer extends Component {
-  shouldComponentUpdate(nextProps) {
-    if (this.props.tei || nextProps.tei) {
-      return true
-    } else {
-      return false
-    }
-  }
-
-  componentDidUpdate() {
+  componentDidMount() {
     this.refs.teiData.innerHTML = 'Loading...'
     if (this.props.collation && this.props.tei) {
       // Render TEI with CETEIcean
@@ -161,7 +153,11 @@ export default class DocumentRenderer extends Component {
                   line.parentNode.replaceChild(newLine, line)
                 } else {
                   const variant = teiData.querySelector(`#${xpointer}`)
-                  variant.classList.add('variant_display_single')
+                  if (variant) {
+                    variant.classList.add('variant_display_mult')
+                  } else {
+                    console.log(xpointer)
+                  }
                   // variant.onclick = () => {
                   //   this.props.getVariants(app, rdg.getAttribute('wit'))
                   //   this.props.setPopoutPosition(variant.getBoundingClientRect())

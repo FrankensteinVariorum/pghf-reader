@@ -14,6 +14,8 @@ const mapStateToProps = (state, ownProps) => {
   if (state.resources.tei) {
     if (!state.resources.tei.isFetching) {
       returnProps.tei = state.resources.tei.data
+    } else {
+      returnProps.tei = null
     }
   }
   if (state.resources.collation) {
