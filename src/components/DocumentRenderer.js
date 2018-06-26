@@ -4,11 +4,27 @@ import { Component } from 'react'
 import sax from 'sax'
 import CETEI from '../../node_modules/CETEIcean/src/CETEI' // :'(
 
+function uuid() {
+  let value = ''
+  let i
+  let random
+  for (i = 0; i < 32; i++) {
+    random = Math.random() * 16 | 0
+
+    if (i === 8 || i === 12 || i === 16 || i === 20) {
+      value += '-'
+    }
+    value += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16)
+  }
+  return value
+}
+
 class pointerParser {
-  constructor(start, end) {
+  constructor(start, end, onclick) {
     this.start = start
     this.end = end
     this.clonedLine
+    this.onclick = onclick
     this.serializer = new window.XMLSerializer()
     this.textLength = 0
     this.overlaps = false
@@ -36,8 +52,10 @@ class pointerParser {
           if (variantString.length > 0) {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
+            spanEl.setAttribute('id', `_${uuid()}`)
             spanEl.appendChild(variantText)
             spanEl.classList.add('variant_display_mult')
+            spanEl.onclick = this.onclick
             curEl.appendChild(spanEl)
           }
         } else if (newLength >= this.start && newLength >= this.end && !this.overlaps) {
@@ -55,7 +73,9 @@ class pointerParser {
           if (variantString.length > 0) {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
+            spanEl.setAttribute('id', `_${uuid()}`)
             spanEl.classList.add('variant_display_mult')
+            spanEl.onclick = this.onclick
             spanEl.appendChild(variantText)
             curEl.appendChild(spanEl)
           }
@@ -71,7 +91,9 @@ class pointerParser {
           if (variantString.length > 0) {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
+            spanEl.setAttribute('id', `_${uuid()}`)
             spanEl.classList.add('variant_display_mult')
+            spanEl.onclick = this.onclick
             spanEl.appendChild(variantText)
 
             curEl.appendChild(spanEl)
@@ -89,6 +111,25 @@ class pointerParser {
       this.textLength = newLength
     }
     this.parser.onopentag = (tag) => {
+      // let element
+      // if (tag.name === 'span') {
+      //   // copy the element from dom so that we can keep onclick events
+      //   const span = this.origLine.querySelector(`#${tag.attributes.id}`)
+      //   if (span) {
+      //     element = span
+      //   } else {
+      //     element = document.createElement(tag.name)
+      //   }
+      // } else {
+      //   element = document.createElement(tag.name)
+      //   for (const attr of Object.keys(tag.attributes)) {
+      //     if (attr === 'class') {
+      //       element.classList.add(tag.attributes[attr])
+      //     } else {
+      //       element.setAttribute(attr, tag.attributes[attr])
+      //     }
+      //   }
+      // }
       const element = document.createElement(tag.name)
       for (const attr of Object.keys(tag.attributes)) {
         if (attr === 'class') {
@@ -111,6 +152,7 @@ class pointerParser {
   }
 
   parseLine(line) {
+    this.origLine = line
     this.parser.write(this.serializer.serializeToString(line)).close()
     return this.clonedLine
   }
@@ -148,20 +190,22 @@ export default class DocumentRenderer extends Component {
                   const line = zone.querySelectorAll('tei-line')[lineNum - 1]
 
                   // Use a SAX approach to locate pointers in this line and create span elements
-                  const saxParser =  new pointerParser(start, end)
+                  const saxParser =  new pointerParser(start, end, () => {
+                    console.log('clicked')
+                    this.props.getVariants(app, rdg.getAttribute('wit'))
+                  })
                   const newLine = saxParser.parseLine(line)
                   line.parentNode.replaceChild(newLine, line)
                 } else {
                   const variant = teiData.querySelector(`#${xpointer}`)
                   if (variant) {
                     variant.classList.add('variant_display_mult')
+                    variant.onclick = () => {
+                      this.props.getVariants(app, rdg.getAttribute('wit'))
+                    }
                   } else {
                     console.log(xpointer)
                   }
-                  // variant.onclick = () => {
-                  //   this.props.getVariants(app, rdg.getAttribute('wit'))
-                  //   this.props.setPopoutPosition(variant.getBoundingClientRect())
-                  // }
                 }
               }
             }
@@ -179,6 +223,7 @@ export default class DocumentRenderer extends Component {
 }
 
 DocumentRenderer.propTypes = {
+  getVariants: PropTypes.func,
   source: PropTypes.string,
   tei: PropTypes.string,
   collation: PropTypes.string,

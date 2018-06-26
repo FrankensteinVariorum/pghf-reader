@@ -1,5 +1,5 @@
 import { connect } from 'react-redux'
-import { getResource, getCollation } from '../actions'
+import { getResource, getCollation, getVariants } from '../actions'
 import { withRouter } from 'react-router'
 import ViewerBody from '../components/ViewerBody'
 
@@ -36,6 +36,9 @@ const mapDispatchToProps = (dispatch) => {
     },
     getCollation: (url) => {
       dispatch(getCollation(url))
+    },
+    getVariants: (app, source) => {
+      dispatch(getVariants(app, source))
     }
   }
 }

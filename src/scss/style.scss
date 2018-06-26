@@ -1,8 +1,15 @@
 // CETEIcean
 @import "../../node_modules/CETEIcean/css/CETEIcean.css";
 
+.sideColumn {
+	position: fixed;
+	right: 8%;
+	width: 27%;
+}
+
 .variant_display_mult {
 	border: 0px;
+	cursor: pointer;
 }
 
 .tempMenu {

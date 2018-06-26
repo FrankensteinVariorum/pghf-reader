@@ -1,4 +1,4 @@
-import { REQUEST_RESOURCE, RECEIVE_RESOURCE, GET_COLLATION_SOURCES } from '../actions'
+import { REQUEST_RESOURCE, RECEIVE_RESOURCE, GET_COLLATION_SOURCES, SET_VARIANTS } from '../actions'
 import { combineReducers } from 'redux'
 import { routerReducer } from 'react-router-redux'
 
@@ -53,8 +53,18 @@ function resources(state = {}, action) {
   }
 }
 
+function variants(state = [], action) {
+  switch (action.type) {
+    case SET_VARIANTS:
+      return action.variants
+    default:
+      return state
+  }
+}
+
 const pghfReader = combineReducers({
   resources,
+  variants,
   router: routerReducer
 })
 

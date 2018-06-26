@@ -48,6 +48,7 @@ export default class ViewerBody extends Component {
         (<DocumentRenderer key="dr"
           source={this.props.source}
           tei={this.props.tei}
+          getVariants={this.props.getVariants}
           collation={this.props.collation} />)
       ]
     } else {
@@ -58,6 +59,7 @@ export default class ViewerBody extends Component {
 
 ViewerBody.propTypes = {
   getCollation: PropTypes.func,
+  getVariants: PropTypes.func,
   getResource: PropTypes.func,
   tei: PropTypes.string,
   collation: PropTypes.string,
