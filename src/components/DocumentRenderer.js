@@ -191,7 +191,6 @@ export default class DocumentRenderer extends Component {
 
                   // Use a SAX approach to locate pointers in this line and create span elements
                   const saxParser =  new pointerParser(start, end, () => {
-                    console.log('clicked')
                     this.props.getVariants(app, rdg.getAttribute('wit'))
                   })
                   const newLine = saxParser.parseLine(line)
