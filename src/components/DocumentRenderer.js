@@ -20,7 +20,7 @@ function uuid() {
 }
 
 class pointerParser {
-  constructor(start, end, onclick) {
+  constructor(start, end, onclick, levRange) {
     this.start = start
     this.end = end
     this.clonedLine
@@ -31,6 +31,7 @@ class pointerParser {
     this.elementStack = []
     this.parser = sax.parser(true)
     this.completed = false
+    this.levRange = levRange.toString().replace(/\s/, '')
 
     this.parser.ontext = (text) => {
       const curEl = this.elementStack.slice(-1)[0]
@@ -54,7 +55,7 @@ class pointerParser {
             const spanEl = document.createElement('span')
             spanEl.setAttribute('id', `_${uuid()}`)
             spanEl.appendChild(variantText)
-            spanEl.classList.add('variant_display_mult')
+            spanEl.classList.add('variant_display_mult', `lev${this.levRange}`)
             spanEl.onclick = this.onclick
             curEl.appendChild(spanEl)
           }
@@ -74,7 +75,7 @@ class pointerParser {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
             spanEl.setAttribute('id', `_${uuid()}`)
-            spanEl.classList.add('variant_display_mult')
+            spanEl.classList.add('variant_display_mult', `lev${this.levRange}`)
             spanEl.onclick = this.onclick
             spanEl.appendChild(variantText)
             curEl.appendChild(spanEl)
@@ -92,7 +93,7 @@ class pointerParser {
             const variantText = document.createTextNode(variantString)
             const spanEl = document.createElement('span')
             spanEl.setAttribute('id', `_${uuid()}`)
-            spanEl.classList.add('variant_display_mult')
+            spanEl.classList.add('variant_display_mult', `lev${this.levRange}`)
             spanEl.onclick = this.onclick
             spanEl.appendChild(variantText)
 
@@ -133,7 +134,7 @@ class pointerParser {
       const element = document.createElement(tag.name)
       for (const attr of Object.keys(tag.attributes)) {
         if (attr === 'class') {
-          element.classList.add(tag.attributes[attr])
+          element.className = element.className + ' ' + tag.attributes[attr]
         } else {
           element.setAttribute(attr, tag.attributes[attr])
         }
@@ -172,6 +173,19 @@ export default class DocumentRenderer extends Component {
         window.col = colDoc
         // for (const app of Array.from(colDoc.querySelectorAll('app:not([type="invariant"])')).slice(126, 129)) {
         for (const app of colDoc.querySelectorAll('app:not([type="invariant"])')) {
+          const levValue = app.getAttribute('n')
+          let levRange = 6
+          if (levValue > 20 && levValue < 50) {
+            levRange = 5
+          } else if (levValue > 10 && levValue <= 20) {
+            levRange = 4
+          } else if (levValue > 5 && levValue <= 10) {
+            levRange = 3
+          } else if (levValue > 3 && levValue <= 5) {
+            levRange = 2
+          } else if (levValue <= 3) {
+            levRange = 1
+          }
           for (const rdg of app.querySelectorAll(`rdg[wit='#${this.props.source}']`)) {
             const ptrs = rdg.querySelectorAll('ptr')
             if (ptrs.length > 0) {
@@ -192,13 +206,13 @@ export default class DocumentRenderer extends Component {
                   // Use a SAX approach to locate pointers in this line and create span elements
                   const saxParser =  new pointerParser(start, end, () => {
                     this.props.getVariants(app, rdg.getAttribute('wit'))
-                  })
+                  }, levRange)
                   const newLine = saxParser.parseLine(line)
                   line.parentNode.replaceChild(newLine, line)
                 } else {
                   const variant = teiData.querySelector(`#${xpointer}`)
                   if (variant) {
-                    variant.classList.add('variant_display_mult')
+                    variant.classList.add('variant_display_mult', `lev${levRange}`)
                     variant.onclick = () => {
                       this.props.getVariants(app, rdg.getAttribute('wit'))
                     }

@@ -9,7 +9,7 @@ export default class ViewerBody extends Component {
     if (!this.props.collation) {
       // Only get the collation once
       // this.props.getCollation(`/data/collations/${this.props.song}.xml`)
-      this.props.getCollation(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/standoff_Spine/spine_${this.props.part}.xml`)
+      this.props.getCollation(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_${this.props.part}.xml`)
       this.getResources()
     }
   }
@@ -24,13 +24,13 @@ export default class ViewerBody extends Component {
     if (this.props.source === 'fMS') {
       this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/sga_chunks/${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'f1818') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-f1818_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1818_${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'f1823') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-f1823_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1823_${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'f1831') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-f1831_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1831_${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'fThomas') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-fThomas_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-fThomas_${this.props.part}.xml`, 'tei')
     }
   }
 
