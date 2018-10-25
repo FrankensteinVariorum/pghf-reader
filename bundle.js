@@ -11765,90 +11765,65 @@ function getVariants(app, lemma) {
   return dispatch => {
     const variants = [];
     const promises = [];
-    for (const reading of Array.from(app.querySelectorAll('app > *'))) {
-      if (reading.tagName === 'rdg') {
-        const wit = reading.getAttribute('wit');
-        const isLemma = wit === lemma ? true : false;
-        const [sourceUrl, xpointer] = reading.children[0].getAttribute('target').split('#');
-        promises.push((0, _isomorphicFetch2.default)(sourceUrl).then(response => response.text()).then(text => {
-          const source = parser.parseFromString(text, 'text/xml');
-          if (wit !== '#fMS') {
-            const variant = source.querySelector(`[*|id="${xpointer}"]`);
-            variants.push({
-              group: uuid(),
-              values: [{
-                text: variant.textContent,
-                sourceUrl: sourceUrl,
-                wit,
-                isLemma
-              }]
-            });
-          } else {
-            const surfaceId = sourceUrl.match(/\/([^\/]+?)\.xml$/)[1];
-            const [zoneAndLine, startVal, endVal] = xpointer.match(/^string-range\((.*)\)$/)[1].split(',');
-            const start = Math.max(parseInt(startVal, 10) - 1, 0);
-            const end = parseInt(endVal, 10) - 1;
-            const zoneType = zoneAndLine.match(/@type='([^']+)'/)[1];
-            const lineNum = parseInt(zoneAndLine.match(/line\[([^\]]+)\]/)[1], 10);
-            const surface = source.querySelector(`surface[*|id='${surfaceId}']`);
-            const zone = surface.querySelector(`zone[type='${zoneType}']`);
-            const line = zone.querySelectorAll('line')[lineNum - 1];
+    for (const reading of Array.from(app.querySelectorAll('rdg'))) {
+      const wit = reading.getAttribute('wit');
+      const isLemma = wit === lemma ? true : false;
+      const [sourceUrl, xpointer] = reading.children[0].getAttribute('target').split('#');
+      promises.push((0, _isomorphicFetch2.default)(sourceUrl).then(response => response.text()).then(text => {
+        const source = parser.parseFromString(text, 'text/xml');
+        if (wit !== '#fMS') {
+          const variant = source.querySelector(`[*|id="${xpointer}"]`);
+          variants.push({
+            group: uuid(),
+            values: [{
+              text: variant.textContent,
+              sourceUrl: sourceUrl,
+              wit,
+              isLemma
+            }]
+          });
+        } else {
+          const surfaceId = sourceUrl.match(/\/([^\/]+?)\.xml$/)[1];
+          const [zoneAndLine, startVal, endVal] = xpointer.match(/^string-range\((.*)\)$/)[1].split(',');
+          const start = Math.max(parseInt(startVal, 10) - 1, 0);
+          const end = parseInt(endVal, 10) - 1;
+          const zoneType = zoneAndLine.match(/@type='([^']+)'/)[1];
+          const lineNum = parseInt(zoneAndLine.match(/line\[([^\]]+)\]/)[1], 10);
+          const surface = source.querySelector(`surface[*|id='${surfaceId}']`);
+          const zone = surface.querySelector(`zone[type='${zoneType}']`);
+          const line = zone.querySelectorAll('line')[lineNum - 1];
 
-            let textLength = 0;
-            let overlaps = false;
-            let variantText = '';
-            for (const textNode of textNodesUnder(line)) {
-              const normalizedText = textNode.nodeValue.replace(/\s+/g, ' ');
-              const newLength = textLength + normalizedText.length;
-              if (newLength >= start && newLength < end) {
-                overlaps = true;
-                const localStart = start - textLength;
-                variantText += ` ${normalizedText.substr(localStart)} `;
-              } else if (newLength >= start && newLength >= end && !overlaps) {
-                const localStart = start - textLength;
-                const localEnd = end - localStart;
-                variantText += ` ${normalizedText.substr(localStart, localEnd)} `;
-              } else if (newLength >= start && newLength >= end && overlaps) {
-                const localEnd = end - textLength;
-                variantText += ` ${normalizedText.substr(0, localEnd)} `;
-              }
-              textLength = newLength;
+          let textLength = 0;
+          let overlaps = false;
+          let variantText = '';
+          for (const textNode of textNodesUnder(line)) {
+            const normalizedText = textNode.nodeValue.replace(/\s+/g, ' ');
+            const newLength = textLength + normalizedText.length;
+            if (newLength >= start && newLength < end) {
+              overlaps = true;
+              const localStart = start - textLength;
+              variantText += ` ${normalizedText.substr(localStart)} `;
+            } else if (newLength >= start && newLength >= end && !overlaps) {
+              const localStart = start - textLength;
+              const localEnd = end - localStart;
+              variantText += ` ${normalizedText.substr(localStart, localEnd)} `;
+            } else if (newLength >= start && newLength >= end && overlaps) {
+              const localEnd = end - textLength;
+              variantText += ` ${normalizedText.substr(0, localEnd)} `;
             }
-            variants.push({
-              group: uuid(),
-              values: [{
-                text: variantText,
-                sourceUrl: sourceUrl,
-                wit,
-                isLemma
-              }]
-            });
+            textLength = newLength;
           }
-        }));
-      } else {
-        //   const values = []
-        //   for (const rdg of Array.from(reading.getElementsByTagName('rdg'))) {
-        //     const wit = rdg.getAttribute('wit')
-        //     const isLemma = wit === lemma ? true : false
-        //     const sourceAndId = rdg.children[0].getAttribute('target').split('#')
-        //     promises.push(
-        //       fetch(sourceAndId[0])
-        //         .then(response => response.text())
-        //         .then(text => {
-        //           const source = parser.parseFromString(text, 'text/xml')
-        //           const variant = source.querySelector(`[*|id="${sourceAndId[1]}"]`)
-        //           values.push({
-        //             text: variant.textContent,
-        //             sourceUrl: sourceAndId[0],
-        //             wit,
-        //             isLemma
-        //           })
-        //         })
-        //     )
-        //   }
-        //   const group = reading.getAttribute('n') ? reading.getAttribute('n') : uuid()
-        //   variants.push({ group, values })
-      }
+          variants.push({
+            group: uuid(),
+            values: [{
+              text: variantText,
+              sourceUrl: sourceUrl,
+              wit,
+              isLemma
+            }]
+          });
+        }
+      }));
     }
     Promise.all(promises).then(() => {
       dispatch(setVariants(variants));
@@ -13308,12 +13283,18 @@ exports = module.exports = __webpack_require__(128)(false);
 exports.i(__webpack_require__(203), "");
 
 // module
-exports.push([module.i, ".sideColumn {\n  position: fixed;\n  right: 8%;\n  width: 27%;\n}\n\n.variant_display_mult {\n  border: 0px;\n  cursor: pointer;\n}\n\n.tempMenu {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n  overflow: hidden;\n}\n\n.tempMenu li {\n  float: left;\n  padding-left: 15px;\n}\n\ntei-teiHeader {\n  display: none;\n}\n\ntei-graphic {\n  display: none;\n}\n\ntei-surface {\n  display: block;\n}\n\ntei-surface {\n  margin: auto;\n  padding: auto;\n  display: block;\n  width: 35em;\n  font-family: Georgia, serif;\n  font-size: 100%;\n  line-height: 1.5;\n}\n\ntei-zone {\n  display: block;\n  padding: .5em 0em .5em 0em;\n}\n\ntei-zone[type=pagination], tei-zone[type=library] {\n  text-align: right;\n}\n\ntei-zone[type=main] {\n  margin-left: 2em;\n}\n\ntei-zone[type=left_margin] {\n  position: absolute;\n  width: 10em;\n}\n\ntei-line {\n  display: block;\n  white-space: nowrap;\n  margin-top: 20px;\n}\n\n*[rend=indent1] {\n  padding-left: 2em;\n}\n\n*[rend=indent2] {\n  padding-left: 4em;\n}\n\ntei-milestone[unit^=tei] {\n  display: none;\n}\n\ntei-del {\n  font-weight: lighter;\n  color: #888888;\n  text-decoration: line-through;\n}\n\ntei-del[rend=strikethrough] {\n  text-decoration: line-through;\n}\n\ntei-del[rend=overwritten] {\n  text-decoration: line-through;\n}\n\ntei-add {\n  font-style: italic;\n}\n\ntei-add[place=superlinear] {\n  margin: -1em 0 0 -1em;\n  position: absolute;\n  display: inline;\n  font-size: smaller;\n}\n\ntei-add[place=sublinear] {\n  margin-top: 1.2em;\n  position: absolute;\n  display: inline-block;\n  font-size: smaller;\n}\n", ""]);
+exports.push([module.i, ".sideColumn {\n  position: fixed;\n  right: 8%;\n  width: 27%;\n}\n\n.variant_display_mult {\n  border: 0px;\n  cursor: pointer;\n}\n\n.lev6 {\n  background-color: #005700;\n  color: white;\n}\n\n.lev5 {\n  background-color: #008A00;\n}\n\n.lev4 {\n  background-color: #52B152;\n}\n\n.lev3 {\n  background-color: #66cc99;\n}\n\n.lev2 {\n  background-color: #83C783;\n}\n\n.lev1 {\n  background-color: #B4DDB4;\n}\n\n.tempMenu {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n  overflow: hidden;\n}\n\n.tempMenu li {\n  float: left;\n  padding-left: 15px;\n}\n\ntei-teiHeader {\n  display: none;\n}\n\ntei-graphic {\n  display: none;\n}\n\ntei-surface {\n  display: block;\n}\n\ntei-surface {\n  margin: auto;\n  padding: auto;\n  display: block;\n  width: 35em;\n  font-family: Georgia, serif;\n  font-size: 100%;\n  line-height: 1.5;\n}\n\ntei-zone {\n  display: block;\n  padding: .5em 0em .5em 0em;\n}\n\ntei-zone[type=pagination], tei-zone[type=library] {\n  text-align: right;\n}\n\ntei-zone[type=main] {\n  margin-left: 2em;\n}\n\ntei-zone[type=left_margin] {\n  position: absolute;\n  width: 10em;\n}\n\ntei-line {\n  display: block;\n  white-space: nowrap;\n  margin-top: 20px;\n}\n\n*[rend=indent1] {\n  padding-left: 2em;\n}\n\n*[rend=indent2] {\n  padding-left: 4em;\n}\n\ntei-milestone[unit^=tei] {\n  display: none;\n}\n\ntei-del {\n  font-weight: lighter;\n  color: #888888;\n  text-decoration: line-through;\n}\n\ntei-del[rend=strikethrough] {\n  text-decoration: line-through;\n}\n\ntei-del[rend=overwritten] {\n  text-decoration: line-through;\n}\n\ntei-add {\n  font-style: italic;\n}\n\ntei-add[place=superlinear] {\n  margin: -1em 0 0 -1em;\n  position: absolute;\n  display: inline;\n  font-size: smaller;\n}\n\ntei-add[place=sublinear] {\n  margin-top: 1.2em;\n  position: absolute;\n  display: inline-block;\n  font-size: smaller;\n}\n", ""]);
 
 // exports
 exports.locals = {
 	"sideColumn": "sideColumn",
 	"variant_display_mult": "variant_display_mult",
+	"lev6": "lev6",
+	"lev5": "lev5",
+	"lev4": "lev4",
+	"lev3": "lev3",
+	"lev2": "lev2",
+	"lev1": "lev1",
 	"tempMenu": "tempMenu"
 };
 
@@ -42979,7 +42960,7 @@ class ViewerBody extends _react.Component {
     if (!this.props.collation) {
       // Only get the collation once
       // this.props.getCollation(`/data/collations/${this.props.song}.xml`)
-      this.props.getCollation(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/standoff_Spine/spine_${this.props.part}.xml`);
+      this.props.getCollation(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_${this.props.part}.xml`);
       this.getResources();
     }
   }
@@ -42994,13 +42975,13 @@ class ViewerBody extends _react.Component {
     if (this.props.source === 'fMS') {
       this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/sga_chunks/${this.props.part}.xml`, 'tei');
     } else if (this.props.source === 'f1818') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-f1818_${this.props.part}.xml`, 'tei');
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1818_${this.props.part}.xml`, 'tei');
     } else if (this.props.source === 'f1823') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-f1823_${this.props.part}.xml`, 'tei');
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1823_${this.props.part}.xml`, 'tei');
     } else if (this.props.source === 'f1831') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-f1831_${this.props.part}.xml`, 'tei');
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1831_${this.props.part}.xml`, 'tei');
     } else if (this.props.source === 'fThomas') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/bridge-P5/P5-fThomas_${this.props.part}.xml`, 'tei');
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-fThomas_${this.props.part}.xml`, 'tei');
     }
   }
 
@@ -43127,7 +43108,7 @@ function uuid() {
 }
 
 class pointerParser {
-  constructor(start, end, onclick) {
+  constructor(start, end, onclick, levRange) {
     this.start = start;
     this.end = end;
     this.clonedLine;
@@ -43138,6 +43119,7 @@ class pointerParser {
     this.elementStack = [];
     this.parser = _sax2.default.parser(true);
     this.completed = false;
+    this.levRange = levRange.toString().replace(/\s/, '');
 
     this.parser.ontext = text => {
       const curEl = this.elementStack.slice(-1)[0];
@@ -43161,7 +43143,7 @@ class pointerParser {
             const spanEl = document.createElement('span');
             spanEl.setAttribute('id', `_${uuid()}`);
             spanEl.appendChild(variantText);
-            spanEl.classList.add('variant_display_mult');
+            spanEl.classList.add('variant_display_mult', `lev${this.levRange}`);
             spanEl.onclick = this.onclick;
             curEl.appendChild(spanEl);
           }
@@ -43181,7 +43163,7 @@ class pointerParser {
             const variantText = document.createTextNode(variantString);
             const spanEl = document.createElement('span');
             spanEl.setAttribute('id', `_${uuid()}`);
-            spanEl.classList.add('variant_display_mult');
+            spanEl.classList.add('variant_display_mult', `lev${this.levRange}`);
             spanEl.onclick = this.onclick;
             spanEl.appendChild(variantText);
             curEl.appendChild(spanEl);
@@ -43199,7 +43181,7 @@ class pointerParser {
             const variantText = document.createTextNode(variantString);
             const spanEl = document.createElement('span');
             spanEl.setAttribute('id', `_${uuid()}`);
-            spanEl.classList.add('variant_display_mult');
+            spanEl.classList.add('variant_display_mult', `lev${this.levRange}`);
             spanEl.onclick = this.onclick;
             spanEl.appendChild(variantText);
 
@@ -43240,7 +43222,7 @@ class pointerParser {
       const element = document.createElement(tag.name);
       for (const attr of Object.keys(tag.attributes)) {
         if (attr === 'class') {
-          element.classList.add(tag.attributes[attr]);
+          element.className = element.className + ' ' + tag.attributes[attr];
         } else {
           element.setAttribute(attr, tag.attributes[attr]);
         }
@@ -43279,6 +43261,19 @@ class DocumentRenderer extends _react.Component {
         window.col = colDoc;
         // for (const app of Array.from(colDoc.querySelectorAll('app:not([type="invariant"])')).slice(126, 129)) {
         for (const app of colDoc.querySelectorAll('app:not([type="invariant"])')) {
+          const levValue = app.getAttribute('n');
+          let levRange = 6;
+          if (levValue > 20 && levValue < 50) {
+            levRange = 5;
+          } else if (levValue > 10 && levValue <= 20) {
+            levRange = 4;
+          } else if (levValue > 5 && levValue <= 10) {
+            levRange = 3;
+          } else if (levValue > 3 && levValue <= 5) {
+            levRange = 2;
+          } else if (levValue <= 3) {
+            levRange = 1;
+          }
           for (const rdg of app.querySelectorAll(`rdg[wit='#${this.props.source}']`)) {
             const ptrs = rdg.querySelectorAll('ptr');
             if (ptrs.length > 0) {
@@ -43299,13 +43294,13 @@ class DocumentRenderer extends _react.Component {
                   // Use a SAX approach to locate pointers in this line and create span elements
                   const saxParser = new pointerParser(start, end, () => {
                     this.props.getVariants(app, rdg.getAttribute('wit'));
-                  });
+                  }, levRange);
                   const newLine = saxParser.parseLine(line);
                   line.parentNode.replaceChild(newLine, line);
                 } else {
                   const variant = teiData.querySelector(`#${xpointer}`);
                   if (variant) {
-                    variant.classList.add('variant_display_mult');
+                    variant.classList.add('variant_display_mult', `lev${levRange}`);
                     variant.onclick = () => {
                       this.props.getVariants(app, rdg.getAttribute('wit'));
                     };
