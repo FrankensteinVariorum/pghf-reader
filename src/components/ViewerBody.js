@@ -24,13 +24,13 @@ export default class ViewerBody extends Component {
     if (this.props.source === 'fMS') {
       this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/Pittsburgh_Frankenstein/Text_Processing/collateXPrep/sga_chunks/${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'f1818') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1818_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/f1818_${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'f1823') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1823_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/f1823_${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'f1831') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1831_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/f1831_${this.props.part}.xml`, 'tei')
     } else if (this.props.source === 'fThomas') {
-      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-fThomas_${this.props.part}.xml`, 'tei')
+      this.props.getResource(`https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/fThomas_${this.props.part}.xml`, 'tei')
     }
   }
 
